@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://naeblis.cx/ns/kid#">
+    <head>
+        <title py:content="title">THIS IS THE TITLE</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta http-equiv="Cache-Control" content="no-cache" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="stylesheet" media="screen" href="{webroot}/static/default.css" />
+        <link rel="stylesheet" media="print" href="{webroot}/static/print.css" />
+    </head>
+    <body>
+        <div py:replace="content.body()">This is the body....</div>
+    </body>
+</html>

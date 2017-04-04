@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="415"
+   name=""
+   committed-date="2005-04-16T22:14:29.657797Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/bookie/bookie"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="415"/>
+<entry
+   name="configuration.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   name="models"
+   kind="dir"/>
+<entry
+   committed-rev="416"
+   name="user.py"
+   text-time="2005-04-17T04:02:56.000000Z"
+   committed-date="2005-04-17T05:44:40.990023Z"
+   checksum="961a4bce54b689c0b935d3787005e81b"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"
+   revision="416"/>
+<entry
+   name="controllers"
+   kind="dir"/>
+<entry
+   committed-rev="415"
+   name="__init__.py"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="554b09628fda16cc893aa16403f741b4"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   name="user.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   committed-rev="416"
+   name="startup.py"
+   text-time="2005-04-17T05:39:55.000000Z"
+   committed-date="2005-04-17T05:44:40.990023Z"
+   checksum="afddf0bdd79795c2d067d83339d2338d"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"
+   revision="416"/>
+<entry
+   name="__init__.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   committed-rev="416"
+   name="session.py"
+   text-time="2005-04-17T04:04:26.000000Z"
+   committed-date="2005-04-17T05:44:40.990023Z"
+   checksum="55d82c8a494e079bc159f0f01406cd91"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"
+   revision="416"/>
+<entry
+   name="startup.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   name="views"
+   kind="dir"/>
+<entry
+   name="session.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   committed-rev="415"
+   name="configuration.py"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="1bea3da9a6dbab9dd69fda73ad346c0b"
+   kind="file"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+</wc-entries>

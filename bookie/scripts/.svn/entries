@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="415"
+   name=""
+   committed-date="2005-04-16T22:14:29.657797Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/bookie/scripts"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="415"/>
+<entry
+   committed-rev="415"
+   name="quixote.conf"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="16c25ff2d62505907aa8d41fb1e8ad40"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="scgi_bookie.py"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="f73a7ca87f04f4a177adf8b1ca1b5f6e"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="simple_bookie.py"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="2830dec5334636acedf4d2ad351b4b12"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="bookie.conf"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="78b9165287f96ae3a4920c6e05165f87"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+</wc-entries>

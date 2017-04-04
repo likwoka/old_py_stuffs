@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="390"
+   name=""
+   committed-date="2004-08-02T09:34:19.674916Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/sumsales/test/data/Aug_03"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="403"/>
+<entry
+   committed-rev="382"
+   name="T_AUG3_9_03.xls"
+   text-time="2004-10-22T02:49:42.458292Z"
+   committed-date="2004-08-01T07:50:00.658906Z"
+   checksum="4d4174763af1ec2aeb65aba540296d23"
+   kind="file"
+   prop-time="2004-10-22T02:49:42.438264Z"/>
+<entry
+   committed-rev="382"
+   name="T_AUG17_23_03.xls"
+   text-time="2004-10-22T02:49:42.738696Z"
+   committed-date="2004-08-01T07:50:00.658906Z"
+   checksum="dfc796637754a1ce07881e29cd2254c4"
+   kind="file"
+   prop-time="2004-10-22T02:49:42.728681Z"/>
+<entry
+   committed-rev="382"
+   name="T_AUG31_SEP6_03.xls"
+   text-time="2004-10-22T02:49:42.838840Z"
+   committed-date="2004-08-01T07:50:00.658906Z"
+   checksum="cda4e9d7dda237cf501232559362f1ae"
+   kind="file"
+   prop-time="2004-10-22T02:49:42.828825Z"/>
+<entry
+   committed-rev="390"
+   name="T_AUG_MONTH_03.xls.old"
+   text-time="2004-10-22T02:49:42.948998Z"
+   committed-date="2004-08-02T09:34:19.674916Z"
+   checksum="a8a9f353f9a912b0d6ec3eebcc226df2"
+   kind="file"
+   prop-time="2004-10-22T02:49:42.938984Z"/>
+<entry
+   committed-rev="390"
+   name="T_AUG_MONTH_03.xls"
+   text-time="2004-10-22T02:49:43.109228Z"
+   committed-date="2004-08-02T09:34:19.674916Z"
+   checksum="a46049000c9fca26c92df0b71f63bb40"
+   kind="file"
+   prop-time="2004-10-22T02:49:43.099214Z"/>
+<entry
+   committed-rev="382"
+   name="T_AUG10_16_03.xls"
+   text-time="2004-10-22T02:49:43.379617Z"
+   committed-date="2004-08-01T07:50:00.658906Z"
+   checksum="936507702fc515a9b60ef3a5aa840faa"
+   kind="file"
+   prop-time="2004-10-22T02:49:43.369603Z"/>
+<entry
+   committed-rev="382"
+   name="T_AUG24_30_03.xls"
+   text-time="2004-10-22T02:49:43.449718Z"
+   committed-date="2004-08-01T07:50:00.658906Z"
+   checksum="0b88496f43721a2bb5ae42c8f9556faf"
+   kind="file"
+   prop-time="2004-10-22T02:49:43.439704Z"/>
+</wc-entries>

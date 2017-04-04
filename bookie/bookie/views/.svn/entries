@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="415"
+   name=""
+   committed-date="2005-04-16T22:14:29.657797Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/bookie/bookie/views"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="415"/>
+<entry
+   committed-rev="415"
+   name="template.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="43d9d72be74e87bcf2704205eab8d515"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="category.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="test.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="c56604d3b2b8fe5401f0f1cd7b042fc0"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="browsersupport.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="deletelink.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="__init__.py"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="552dacb15f2019c8f3f74c55befa242c"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   name="admin"
+   kind="dir"/>
+<entry
+   committed-rev="415"
+   name="root.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="a49f469e8e4627f9445ddce5cd6ca60e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   committed-rev="415"
+   name="editcategory.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   name="__init__.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   committed-rev="415"
+   name="movelink.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   committed-rev="415"
+   name="options.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   committed-rev="415"
+   name="link.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   committed-rev="415"
+   name="deletecategory.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   committed-rev="415"
+   name="editlink.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   committed-rev="415"
+   name="movecategory.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+<entry
+   name="root.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   committed-rev="415"
+   name="login.kid"
+   text-time="2005-04-16T22:15:49.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d5ee4d4db46027cbad735bdd2108cff4"
+   kind="file"
+   schedule="delete"
+   prop-time="2005-04-16T22:15:49.000000Z"/>
+</wc-entries>

@@ -1,0 +1,10 @@
+[server]
+host = 0
+port = 8080
+static_content = /home/alex/sandbox/bookie/static
+
+[bookie]
+user_store = /home/alex/sandbox/bookie/tmpdata/user_store
+bookmarks_store = /home/alex/sandbox/bookie/tmpdata/bookmarks_store
+session_store = /home/alex/sandbox/bookie/tmpdata/session_store
+

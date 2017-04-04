@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Import Project="CoreAssemblyVersion.target" />
+  <Import Project="fss.build.config.target" />
+
+  <PropertyGroup>
+    <CoreLibPath>$(CoreLibraryPath)</CoreLibPath>
+    <BuildConfiguration Condition= "'$(BuildConfiguration)' == ''">Debug</BuildConfiguration>
+    <ClientBinDir>.\Web\FSSPortalSolution.root\FSSPortalSolution\FSSPortal\ClientBin</ClientBinDir>
+    <ThirdPartyControls>.\Web\Libraries\3rdPartyControls\ControlsInUse</ThirdPartyControls>
+
+    <!-- Suppress CSC compiler warnings.  Warning numbers are comma-separated. ex: 1607,1608 -->
+    <!-- CS1607: "file version not major.minor.build.revision format" -->
+    <!-- CS1591: "Missing XML comment for publicly visible type or member..." -->
+    <SuppressWarnings>nowarn=1607,1591</SuppressWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ThirdPartyControlFiles Include="$(ThirdPartyControls)\*.*"/>
+    <XapFiles Include="$(ClientBinDir)\*.xap"/>
+    <JunkFiles Include=".\Web\FSSPortalSolution.root\FSSPortalSolution\FSSPortal\Bin\CLibrary.*;.\Web\FinSoftwareServicesSolution.root\WCFServices\bin\CLibrary.*"/>
+    <WebLibProjects Include=".\Web\Libraries\**\*.csproj" />
+    <SpectrumLibProjects Include="$(CoreLibPath)\Source\Libraries\**\*.csproj;$(CoreLibPath)\Source\Libraries\**\**\*.csproj" />
+    <PortalSlObj Include=".\Web\FSSPortalSolution.root\FSSPortalSolution\Silverlight\**\**\obj\$(BuildConfiguration)\*" />
+  </ItemGroup>
+
+  <Target Name="MapDrives" Condition="'$(MapDrives)' == 'true'" >
+
+    <ConvertToAbsolutePath Paths="$(CoreLibPath)\Source">
+      <Output TaskParameter="AbsolutePaths" PropertyName="SpnLib_Dir_Abs"/>
+    </ConvertToAbsolutePath>
+
+    <ConvertToAbsolutePath Paths=".\Web">
+      <Output TaskParameter="AbsolutePaths" PropertyName="WebLib_Dir_Abs"/>
+    </ConvertToAbsolutePath>
+
+    <Exec Command="net share R-Drive /delete /yes" ContinueOnError="true"/>
+    <Exec Command="net share V-Drive /delete /yes" ContinueOnError="true"/>
+
+    <Exec Command='net share R-Drive="$(SpnLib_Dir_Abs)" /grant:everyone,FULL' ContinueOnError="false"/>
+    <Exec Command='net share V-Drive="$(WebLib_Dir_Abs)" /grant:everyone,FULL' ContinueOnError="false"/>
+
+    <Exec Command="net use r: /delete /yes" ContinueOnError="true"/>
+    <Exec Command="net use v: /delete /yes" ContinueOnError="true"/>
+
+    <Exec Command="net use r: \\localhost\R-Drive /persistent:yes" ContinueOnError="false"/>
+    <Exec Command="net use v: \\localhost\V-Drive /persistent:yes" ContinueOnError="false"/>
+
+  </Target>
+
+  <Target Name="StartUp" DependsOnTargets="MapDrives" >
+
+  </Target>
+
+  <Target Name="TearDown" DependsOnTargets="StartUp" Condition="'$(MapDrives)' == 'true'">
+    <!--
+  <Exec Command="net use r: /delete /yes" ContinueOnError="true"/>
+  <Exec Command="net use v: /delete /yes" ContinueOnError="true"/>
+
+  <Exec Command="net share R-Drive /delete /yes" ContinueOnError="true"/>
+  <Exec Command="net share V-Drive /delete /yes" ContinueOnError="true"/>
+  -->
+  </Target>
+
+  <Target Name="GetLatestSpectrumLibraries" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command='tf get /version:T "$(CoreLibPath)\Source\Libraries" /recursive' ContinueOnError="false" />
+  </Target>
+
+  <Target Name="BuildSpectrumLibraries" DependsOnTargets="GetLatestSpectrumLibraries" >
+
+    <MSBuild Projects="$(CoreLibPath)\Source\Libraries\Libraries.sln"
+             Properties="Configuration=Debug;$(SuppressWarnings)" />
+
+    <MSBuild Projects="@(SpectrumLibProjects)"
+      Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" >
+
+      <Output TaskParameter="TargetOutputs" ItemName="AssembliesBuiltByChildProjects" />
+    </MSBuild>
+
+    <Copy   OverwriteReadOnlyFiles="true"
+      SourceFiles="@(AssembliesBuiltByChildProjects)"
+      DestinationFiles="@(AssembliesBuiltByChildProjects->'$(CoreLibPath)/Source/Libraries/%(Filename)%(Extension)')" />
+
+    <Copy   OverwriteReadOnlyFiles="true"
+      SourceFiles="@(AssembliesBuiltByChildProjects)"
+      DestinationFiles="@(AssembliesBuiltByChildProjects->'$(CoreLibPath)/Source/Libraries/bin.$(BuildConfiguration)/%(Filename)%(Extension)')" />
+
+  </Target>
+
+
+  <Target Name="GetLatestWebLibraries" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command="tf get /version:T .\Web\Libraries /recursive" ContinueOnError="false" />
+  </Target>
+
+  <Target Name="CopyDownThirdPartyLibraries">
+
+    <Copy   OverwriteReadOnlyFiles="true"
+      SkipUnchangedFiles="true"
+      SourceFiles="@(ThirdPartyControlFiles)"
+      DestinationFiles="@(ThirdPartyControlFiles->'./Web/Libraries/%(Filename)%(Extension)')" />
+
+  </Target>
+
+  <Target Name="BuildWebLibraries" DependsOnTargets="StartUp;GetLatestWebLibraries;CopyDownThirdPartyLibraries">
+
+    <MSBuild Projects=".\Web\Libraries\Libraries.sln"
+             Properties="Configuration=Debug;$(SuppressWarnings)" />
+
+    <MSBuild Projects="@(WebLibProjects)"
+Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" >
+
+      <Output TaskParameter="TargetOutputs" ItemName="AssembliesBuiltByChildProjects" />
+
+    </MSBuild>
+
+    <Copy   OverwriteReadOnlyFiles="true"
+      SourceFiles="@(AssembliesBuiltByChildProjects)"
+      DestinationFiles="@(AssembliesBuiltByChildProjects->'./Web/Libraries/%(Filename)%(Extension)')" />
+
+    <Copy   OverwriteReadOnlyFiles="true"
+      SourceFiles="@(AssembliesBuiltByChildProjects)"
+      DestinationFiles="@(AssembliesBuiltByChildProjects->'./Web/Libraries/bin.$(BuildConfiguration)/%(Filename)%(Extension)')" />
+  </Target>
+
+  <Target Name="GetLatestRMS" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command="tf get /version:T .\Services\3.5\RateManagerService\RateManagerService.sln /recursive" ContinueOnError="false" />
+    <Exec   Condition="!Exists('.\Services\3.5\RateManagerService\RateManagerService.sln')"
+      Command='tf get /version:T "$(CoreLibPath)\Source\RateManagerService\RateManagerService.sln" /recursive'
+      ContinueOnError="false" />
+  </Target>
+
+  <Target Name="SetRmsHome">
+    <PropertyGroup>
+      <RmsHome>$(CoreLibPath)\Source\RateManagerService</RmsHome>
+      <RmsHome Condition="Exists('.\Services\3.5\RateManagerService\RateManagerService.sln')">.\Services\3.5\RateManagerService</RmsHome>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CleanRmsSlObj" DependsOnTargets="SetRmsHome">
+    <ItemGroup>
+      <RmsSlObj Include="$(RmsHome)\RateManagerServiceAdministrativeConsole\obj\$(BuildConfiguration)\*" />
+      <RmsUniqueSlObjDirs Include="%(RmsSlObj.RelativeDir)"/>
+    </ItemGroup>
+
+    <Message Text="Dir to Rem: @(RmsUniqueSlObjDirs)"/>
+    <RemoveDir Directories="@(RmsUniqueSlObjDirs)" />
+  </Target>
+
+  <Target Name="BuildRMS" DependsOnTargets="StartUp;GetLatestRMS;SetRmsHome;CleanRmsSlObj">
+
+    <Message Text="RMSHOME: $(RmsHome)"/>
+
+    <MSBuild Projects="$(RmsHome)\RateManagerService.sln"
+      Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" />
+
+  </Target>
+
+  <Target Name="GetLatestCLibrary" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command='tf get /version:T "$(CoreLibPath)\Source\CLibrary" /recursive' ContinueOnError="false" />
+    <Exec Command='tf get /version:T "$(CoreLibPath)\Source\CS\3rdParty" /recursive' ContinueOnError="false" />
+    <Exec Command='tf get /version:T "$(CoreLibPath)\Source\CS\Source" /recursive' ContinueOnError="false" />
+  </Target>
+
+  <Target Name="BuildCLibrary" Condition="'$(BuildCLib)' == 'true'" DependsOnTargets="StartUp;GetLatestCLibrary">
+    <MSBuild Projects="$(CoreLibPath)\Source\CLibrary\CLibrary.sln"
+      Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" />
+  </Target>
+
+  <Target Name="GetLatestPRS" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command="tf get /version:T .\Service\PositionReportService /recursive" ContinueOnError="false" />
+  </Target>
+
+  <Target Name="BuildPRS" DependsOnTargets="StartUp;BuildCLibrary;GetLatestPRS">
+    <MSBuild Projects=".\Services\PositionReportService\PositionReportService.sln"
+      Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" />
+  </Target>
+
+  <Target Name="GetLatestServices" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command="tf get /version:T .\Web\FinSoftwareServicesSolution.root /recursive" ContinueOnError="false" />
+  </Target>
+
+  <Target Name="BuildServices" DependsOnTargets="StartUp;GetLatestServices">
+
+    <MSBuild Projects=".\Web\FinSoftwareServicesSolution.root\FinSoftwareServicesSolution\FinSoftwareServicesSolution.sln"
+      Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" />
+
+    <Delete Files="@(JunkFiles)" />
+
+  </Target>
+
+  <Target Name="GetLatestPortal" Condition="'$(GetLatest)' == 'true'">
+    <Exec Command="tf get /version:T .\Web\FSSPortalSolution.root /recursive" ContinueOnError="false" />
+  </Target>
+
+  <Target Name="CleanClientBin">
+
+    <!-- Clears Read Only Flag -->
+    <Exec Command="attrib /S -S -H -R $(ClientBinDir)\*.*"  ContinueOnError="true" IgnoreExitCode="true" />
+    <Delete Files="@(XapFiles)" TreatErrorsAsWarnings="true"/>
+
+  </Target>
+
+  <Target Name="CleanPortalSlObj">
+
+    <ItemGroup>
+      <UniqueSlObjDirs Include="%(PortalSlObj.RelativeDir)"/>
+    </ItemGroup>
+
+    <RemoveDir Directories="@(UniqueSlObjDirs)" />
+  </Target>
+
+  <Target Name="BuildPortal" DependsOnTargets="StartUp;GetLatestPortal;CleanClientBin;CleanPortalSlObj">
+
+    <MSBuild Projects=".\Web\FSSPortalSolution.root\FSSPortalSolution\FSSPortalSolution.sln"
+      Properties="Configuration=$(BuildConfiguration);$(SuppressWarnings)" />
+
+    <Delete Files="@(JunkFiles)" />
+
+  </Target>
+
+  <Target Name="BuildSetupFiles" Condition="'$(BuildConfiguration)' == 'Release'">
+
+    <!-- TODO://Build Setup Files Here -->
+
+  </Target>
+  
+  <Target Name="GetLatest" DependsOnTargets="GetLatestCLibrary;GetLatestSpectrumLibraries;GetLatestRMS;GetLatestWebLibraries;GetLatestServices;GetLatestPortal">
+  </Target>
+
+  <Target Name="BuildAll" DependsOnTargets="PreBuild;StartUp;BuildCLibrary;BuildSpectrumLibraries;BuildWebLibraries;BuildRMS;BuildPRS;BuildServices;BuildPortal;BuildSetupFiles;TearDown;PostBuild">
+
+  </Target>
+
+</Project>
+
+
+

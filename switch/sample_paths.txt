@@ -1,0 +1,4 @@
+C:\Web\Release\4.0\4.0.4178\21861(20110610-AFEX)\Web\FinSoftwareServicesSolution.root\WCFServices
+C:\Web\Release\4.0\4.0.4178\21861(20110610-AFEX)\Web\FSSPortalSolution.root\FSSPortalSolution
+C:\Web\Main\Web\FinSoftwareServicesSolution.root\WCFServices
+C:\Web\Main-LoginConsolidation\Web\Libraries

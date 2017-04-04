@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<?python
+import time
+current_time = time.strftime("%C %c")
+title = "hello world"
+names = ['alex', 'beatrice', 'cathy', 'daphne', 'eva', 'florence']
+?>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:py="http://naeblis.cx/ns/kid#">
+    <head>
+        <title py:content="title">This is the title</title>
+    </head>
+    <body>
+        <h1 py:content="title">This is the title</h1>
+        <p>The current time is 
+            <b py:content="current_time">12:01</b>.
+        </p>
+
+        <p>3 different ways to use a for loop, see source:</p>
+        <ul>
+            <li py:for="name in names">
+                My name is {name}
+            </li>
+        </ul>
+        
+        <ul>
+            <li py:for="name in names">
+                <b py:content="name">the name</b>
+            </li>
+        </ul>
+
+        <ul>
+            <li py:for="name in names" py:content="name" />
+        </ul>
+
+        <p><em py:if="True">This will show if it is true</em></p>
+        <p><em py:if="False">This will not show if it is false</em></p>
+
+    </body>
+</html>
+

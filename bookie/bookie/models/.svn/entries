@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="415"
+   name=""
+   committed-date="2005-04-16T22:14:29.657797Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/bookie/bookie/models"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="415"/>
+<entry
+   committed-rev="416"
+   name="bookmarks.py"
+   text-time="2005-04-17T04:04:49.000000Z"
+   committed-date="2005-04-17T05:44:40.990023Z"
+   checksum="259ae3c1a733d8b97debdc99b0f449d8"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"
+   revision="416"/>
+<entry
+   name="bookmarks.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+<entry
+   committed-rev="415"
+   name="__init__.py"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   name="__init__.pyc"
+   kind="file"
+   deleted="true"
+   revision="416"/>
+</wc-entries>

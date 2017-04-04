@@ -1,0 +1,708 @@
+'''description:
+  Switch to another branch.
+    
+  This script search your folder and then TFS based on your branch-hints,
+  1) prompt you to pick the branch out of the list,
+  2) get a copy of the branch if it does not exist in your local folder, 
+  3) create the branch website if it does not exist,
+  4) stop the current running website and start the branch website,
+  5) map the drives for that branch.
+
+example:
+  switch Main
+  switch 4179
+  switch AFEX
+
+requirement:
+  .NET 4.0
+  IIS 7
+  TFS 10
+  IronPython 2.7
+'''
+# Ideas:
+# - allow choosing and setting DataLink.xml
+# - Get from TFS
+# - path ranking?
+# - fix bug: allow Keyboard-Interupt in app pool creation prompt
+
+
+# This script uses Python for scripting,
+# uses IronPython for calling into .NET APIs.
+#
+# Reference:
+# http://msdn.microsoft.com/en-us/library/microsoft.web.administration.aspx
+# http://learn.iis.net/page.aspx/165/how-to-use-microsoftwebadministration/
+# http://msdn.microsoft.com/en-us/library/microsoft.teamfoundation.aspx
+# http://blogs.msdn.com/b/allclark/archive/2010/03/17/sample-code-connect-to-team-foundation-server.aspx
+# http://stackoverflow.com/questions/108439/how-do-i-get-the-result-of-a-command-in-a-variable-in-windows
+# http://www.robvanderwoude.com/if.php
+
+# Thoughts: 2012 03 19 - Using IronPython seems like not a good idea for maintenance.
+# The strength of IronPython is that it allows you to mix both python and .NET
+# code (libraries, types) together to have the best of both world.  However, this also 
+# means that you have to be well verse in both languages to maintain the code.  In 
+# this code, we love argparse (command line argument parsing), elementtree (xml 
+# parsing) and the lightweight-ness and scripting of Python, and Console (change 
+# color easily), IIS, TFS, File system searching, and calling to shell (Process) of 
+# .NET. 
+#
+AUTHOR = 'likwoka@gmail.com'
+DESCRIPTION = __doc__
+VERSION = '0.7.0'
+
+## Dependencies -- Python and .NET ################################
+import sys, os, argparse, user, traceback, glob
+from argparse import RawTextHelpFormatter
+from xml.etree.ElementTree import ElementTree
+
+import clr 
+clr.AddReference('Microsoft.Web.Administration')
+#clr.AddReference('Microsoft.TeamFoundation.Client')
+#clr.AddReference('Microsoft.TeamFoundation.VersionControl.Client')
+
+from Microsoft.Web.Administration import (ServerManager, ObjectState, 
+    ApplicationPool, ManagedPipelineMode, 
+    ProcessModelIdentityType)
+from System.Diagnostics import Process
+from System import Console, ConsoleColor
+from System.IO import Directory, SearchOption
+from System.Threading import Thread
+
+
+## Constants and options.##########################################
+PORT = 80
+DEFAULT_SRC_ROOT = 'C:\\Web'
+SITE_ROOT = 'C:\\inetpub\\wwwroot'
+WCF_VDIR_PATH = '/FinSoftwareServices'
+POSSIBLE_WCF_FILESYS_PATHS = ['Web\\FinSoftwareServicesSolution.root', 'FinSoftwareServicesSolution.root']
+POSSIBLE_WEBLIB_FILESYS_PATHS = ['Web', '']
+CONFIG_FILENAME = '.switch.conf'
+TMP_EXT = '.tmp'
+
+
+## Search and result ranking.#######################################
+def search_local_drive(src_root, hint):
+    '''Search local drive from the src_root using the given hint.
+    '''
+    search = eval("AdditiveSearch")(src_root, hint)
+    return search.get_directories()
+
+class SearchStrategy:
+    def __init__(self, src_root, hint):
+        self.src_root = src_root
+        self.hint = hint
+        
+    def get_directories(self):
+        raise NotImplementedError()
+
+#class ClassicSearch(SearchStrategy):
+#    '''Only differentiates between Main and others.  Would work in
+#    most case but very slow because it search to the bottom.
+#    '''
+#    def get_directories(self):
+#        BRANCH_SEARCH_PATTERN = '*%s*)'
+#        MAIN_SEARCH_PATTERN = '*%s*'      
+#        
+#        if "main" in self.hint.lower():
+#            pattern = MAIN_SEARCH_PATTERN
+#        else:
+#            pattern = BRANCH_SEARCH_PATTERN
+#
+#        paths = Directory.GetDirectories(self.src_root, 
+#            pattern % self.hint, 
+#            SearchOption.AllDirectories)
+#        return list(paths) # Gotcha: converting from .NET array to Python list.
+
+class AdditiveSearch(SearchStrategy):
+    '''Only targets specific path structure -- much faster than ClassicSearch.
+    '''
+    def get_directories(self):
+        TARGETS_LIST = [
+            # 1) Handles current TFS structure -- search for release, dev branch.
+            #         1       2       *            V
+            # ex: C:\Web\Development\Alex\Main-LoginConsolidation
+            # 1st param is src_root, 2nd param is user input         
+            ['%s\\Release\\?.?\\*\\*%s*)\\', '%s\\Development\\*\\*%s*\\'],
+            # 2) Handles dev branch within a user's folder's folder
+            #         1       2            V       *
+            # ex: C:\Web\Development\Alex\ANZ-RM\WebMain            
+            ['%s\\Development\\*%s*\\*\\'],
+            # 3) Handles dev branch within a project folder
+            #                               V          *
+            # ex: C:\Web\Development\WCFServiceAsWAS\WebMain            
+            ['%s\\Development\\*\\*%s*\\*\\'],
+            # 4) Handles release branch for patch
+            #                    ?.?   *              *    - V
+            # ex: C:\Web\Release\4.0\4.0.4360\20000(Client)-SP08
+            ['%s\\Release\\?.?\\*\\*-*%s*\\'],
+            # 5) Handles dev branch directly under Development
+            #                         *  -      V
+            # ex: C:\Web\Development\4360-CitizenAutopost
+            ['%s\\Development\\*-*%s*\\'],
+        ]
+        
+        result_set = set()
+        if self.hint.lower() == "main":
+            TARGETS_LIST[0].insert(0, '%s\\%s')        
+        
+        for TARGETS in TARGETS_LIST:
+            for pattern in TARGETS:
+                paths = glob.glob(pattern %(self.src_root, self.hint))
+                result_set = result_set.union(self.AVFilter(paths))
+        return list(result_set)
+        
+    def AVFilter(self, paths):
+        '''Return those directories that have AssemblyVersion.txt only.'''
+        return [p for p in paths if os.path.exists(os.path.join(p, "AssemblyVersion.txt"))]        
+
+        
+## TFS handling. ##################################################    
+def search_tfs_server(src_root, hint):
+    '''Only search the $/Web/Main $/Web/Release paths'''
+    #program = 'tf'
+    #arguments = 'dir $/Web/Main /recusive /folders'
+    #arguments = 'dir $/Web/Release/*/*/*/ /recusive /folders'
+    #make_shell_call()
+    return []
+    
+    
+#def download_branch_from_tfs(branch_path):
+#    '''Only run this if branch doesn't exist in local drive.
+#    We assume the TFS Workspace is in place.'''
+#    program = 'tf'
+#    arguments = 'get /version:T "%s" /recursive'
+#    
+#    # # Get Web Libraries
+#    # path = os.path.abspath(os.join(branch_path, './Web/Libraries'))
+#    # reply = make_shell_call(program, arguments % path)
+#  
+#    # # Get Web Services
+#    # path = os.path.abspath(os.join(branch_path, '.\Web\FinSoftwareServicesSolution.root'))
+#    # reply = make_shell_call(program, arguments % path)
+#
+#    # # Get Web Portal
+#    # path = os.path.abspath(os.join(branch_path, '.\Web\FSSPortalSolution.root'))
+#    # reply = make_shell_call(program, arguments % path)
+#
+#    # Get all web code.
+#    path = os.path.abspath(branch_path)
+#    reply = make_shell_call(program, arguments % path)
+#    
+#    # Get Spectrum Lib.
+#    path = get_corelib_path_from_target_file(branch_path)
+#    reply = make_shell_call(program, arguments % path)
+    
+
+def get_corelib_path_from_target_file(branch_path):
+    ns = '{http://schemas.microsoft.com/developer/msbuild/2003}'
+    xpath = '%(ns)sPropertyGroup/%(ns)sCoreLibraryPath' % {'ns':ns}         
+    rootelement = ElementTree().parse(os.path.join(branch_path, 'CoreAssemblyVersion.target'))
+    core_lib_path = rootelement.find(xpath).text
+    
+    result = os.path.abspath(os.path.join(branch_path, core_lib_path))
+    return result
+
+    
+## Website handling. ################################################
+class AppPool:
+    def __init__(self, name, pipeline_mode, runtime_version):
+        self.name = name
+        self.pipeline_mode = pipeline_mode
+        self.runtime_version = runtime_version
+
+        
+def generate_website_name(branch_path, src_root):
+    # Examples:
+    # ['C:', 'Web', 'Release', '4.0', '4.0.4178', '21861(20110610-AFEX)']
+    # ['C:', 'Web', 'Release', '4.0', '12.2', '2.0(20120221-Shared)']
+    # ['C:', 'Web', 'Development', 'Alex', 'Main-LoginConsolidation']
+    # ['C:', 'Web', 'Main']
+    rel_path = branch_path.strip(src_root)
+    coms = rel_path.split('\\')
+       
+    if len(coms) == 1: # probably Main, just use it then.
+        name = coms[0]
+        return name
+    elif len(coms) == 3 and coms[0].lower() == 'development': # private branch
+        name = coms[-1]
+        return name
+    else:
+        # return AFEX from '21861(20110610-AFEX)'
+        # return SP08 from '20000(Client)-SP08'
+        name = coms[-1].split('-')[-1].strip(')')
+        # return 4178 from '4.0.4178'
+        num = coms[-2].split('.')[-1]
+        # return 12.2 from '12.2'
+        if coms[-2].count('.') < 2:
+            num = coms[-2]
+        return "%s-%s" % (num, name)
+
+        
+svr_mgr = ServerManager()
+
+def does_website_exist(name):
+    global svr_mgr
+    for site in svr_mgr.Sites:
+        if site.Name.lower() == name.lower():
+            return True
+    return False
+
+    
+def get_existing_app_pools():
+    app_pools = []
+    global svr_mgr
+    for a in svr_mgr.ApplicationPools:
+        app_pools.append(AppPool(a.Name, a.ManagedPipelineMode, a.ManagedRuntimeVersion))
+    return app_pools
+    
+    
+def create_website(name, port, site_root, wcf_name, wcf_path, app_pool1, app_pool2):
+    global svr_mgr
+    site = svr_mgr.Sites.Add(name, site_root, port)
+    site.ServerAutoStart = True;
+    site.Applications[0].VirtualDirectories.Add(wcf_name, wcf_path)
+    site.Applications.Add(wcf_name + "/WCFServices", os.path.join(wcf_path, "WCFServices")) 
+    site.Applications[0].ApplicationPoolName = app_pool1.name
+    site.Applications[1].ApplicationPoolName = app_pool2.name
+    svr_mgr.CommitChanges()
+    # MS Bug .. so that stop and start website would work.
+    # Need to uncomment this if using *_w_api version to start/stop websites.
+    #Thread.CurrentThread.Join(1000) 
+    
+    
+#def stop_current_running_website_w_api():
+#    global svr_mgr
+#    for site in svr_mgr.Sites:
+#            if site.State in (ObjectState.Started, ObjectState.Starting, ObjectState.Unknown):
+#                site.Stop()
+
+def stop_current_running_website_w_cli():
+    # pipe | won't work in C# Process as arguments, so have to do the below.
+    reply = make_shell_call('cmd',
+        '/C "c:\\windows\\system32\\inetsrv\\appcmd.exe list site /xml /state:"$=started" | c:\\windows\\system32\\inetsrv\\appcmd.exe stop site /in"')
+    log_info(reply.info_msg)
+    if reply.exit_code > 0:
+        log_error(reply.err_msg)
+
+                                
+#def start_website_w_api(name):
+#    global svr_mgr
+#    site = svr_mgr.Sites[name]
+#    site.Start()
+    
+def start_website_w_cli(name):
+    reply = make_shell_call("c:\\windows\\system32\\inetsrv\\appcmd.exe", 
+        'start site /site.name:"%s"' % name)
+    log_info(reply.info_msg)
+    if reply.exit_code > 0:
+        log_error(reply.err_msg)
+
+        
+stop_current_running_website = stop_current_running_website_w_cli
+start_website = start_website_w_cli
+    
+## Drive mapping. ################################################    
+class DriveMappingError(Exception):
+    '''Represents any drive mapping warnings.'''
+    def __init__(self, msg):
+        Exception.__init__(self, msg)
+
+        
+def map_drive(drive_letter, path, raise_error=False):
+    drive_letter = drive_letter.upper()  
+    path = os.path.abspath(path)
+    share = 'share %s-Drive="%s" /grant:everyone,FULL' % (drive_letter, path)
+    use = "use %s: \\\\localhost\%s-Drive /persistent:yes" % (drive_letter, drive_letter)
+
+    reply = make_shell_call("net", share)
+    if raise_error and reply.exit_code > 0:
+        raise DriveMappingError("<net %s> %s" % (share, reply.err_msg))
+    
+    reply = make_shell_call("net", use)
+    if raise_error and reply.exit_code > 0:
+        raise DriveMappingError("<net %s> %s" % (use, reply.err_msg))
+    
+    
+def unmap_drive(drive_letter, raise_error=False):
+    drive_letter = drive_letter.upper()
+    share = "share %s-Drive /delete /yes" % drive_letter
+    use = "use %s: /delete /yes" % drive_letter
+    
+    make_shell_call("net", use) # don't care about if this returns error
+        
+    reply = make_shell_call("net", share)
+    if raise_error and reply.exit_code > 0:
+        raise DriveMappingError("<net %s> %s" % (share, reply.err_msg))
+
+        
+## Shell call. ################################################### 
+class ShellReply:
+    def __init__(self, exit_code, info_msg, err_msg):
+        self.exit_code = exit_code
+        self.info_msg = info_msg
+        self.err_msg = err_msg
+        
+
+def make_shell_call(program, arguments):
+    '''Using .NET Process class.'''
+    p = Process()
+    p.StartInfo.UseShellExecute = False
+    p.StartInfo.RedirectStandardError = True
+    p.StartInfo.RedirectStandardOutput = True                
+    p.StartInfo.CreateNoWindow = True
+    p.StartInfo.FileName = program
+    p.StartInfo.Arguments = arguments
+    p.Start()
+    p.WaitForExit() 
+    info_msg = p.StandardOutput.ReadToEnd()
+    err_msg = p.StandardError.ReadToEnd()
+    exit_code = p.ExitCode 
+    p.Close()
+    return ShellReply(exit_code, info_msg, err_msg)
+    
+def set_files_to_writable(root_path):
+    '''Set files from readonly to writable.
+
+    root_path -- all files under this path
+                 will be set to writable.
+    '''
+    log_info("Setting files from readonly to writable in:\n%s" % root_path)
+    reply = make_shell_call("cmd", '/C pushd "%s" & attrib -R /S /D & popd' % root_path.replace('\\', '/'))
+
+## Path Probing. ####################################################
+def find_path_that_exists(branch_path, possible_ends):
+    for file_end in possible_ends:
+        possible_path = os.path.join(branch_path, file_end)
+        if os.path.exists(possible_path):
+            return possible_path
+    raise ValueError("Tried all possible file system paths, they all don't exist!")
+    
+## Config file handling. ############################################   
+def get_config(conffile):
+    '''Return the configuration parameters.
+    1) if valid conffile is given, use it;pu
+    2) else look for user's home directory, if it is there, then use it;
+    3) else ask the user questions, then create the file in the user 
+    home directory.
+    '''
+    if conffile:
+        if not os.path.isfile(conffile):
+            raise UsageError('Configuration file <%s> is not found.' \
+                             % conffile)
+        config_vars = read_conffile(conffile)
+    else:
+        c = os.path.join(user.home, CONFIG_FILENAME)
+        if os.path.isfile(c):
+            config_vars = read_conffile(c)
+        else:
+            print 'No configuration file is found in your home directory.  ' \
+                  'Switch will now attempt to create a configuration file ' \
+                  'for you.  The file will be saved as %s in ' \
+                  'your home directory.  Please answer the following ' \
+                  'questions.' % CONFIG_FILENAME
+            config_vars = generate_conffile(c)
+    return config_vars
+
+    
+def read_conffile(conffile):
+    '''Return configuration parameters from reading the config file.
+    Config file is python code.
+    '''
+    config_vars = {}
+    try:
+        execfile(conffile, config_vars)
+    except IOError:
+        raise
+    return config_vars
+
+
+def generate_conffile(conffile):
+    '''Ask the user for preference to be stored in config file.'''
+    src_root = raw_input('Please enter the source code root folder:\nYour choice: [%s]' % DEFAULT_SRC_ROOT)
+    src_root = src_root.strip() 
+    if len(src_root) == 0:
+        src_root = DEFAULT_SRC_ROOT
+    else:
+        src_root = os.path.abspath(src_root)
+        
+    with open(conffile + TMP_EXT, 'w') as f:
+        f.write('src_root = "%s"' % src_root)
+    
+    os.rename(conffile + TMP_EXT, conffile)
+    return {'src_root': src_root}
+
+
+## Getting database information. ####################################
+class DBInfo:
+    def __init__(self, path):
+        self.path = path
+
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("<DataSource>"):
+                    self.datasource = line.replace("<DataSource>", 
+                        "").replace("</DataSource>", "")
+                        
+                if line.startswith("<Database>"):
+                    self.database = line.replace("<Database>", 
+                        "").replace("</Database>", "")
+            
+def get_datalink_path(wcf_filesys_path):
+    webconfig_path = os.path.join(wcf_filesys_path, "WCFServices", "Web.config")
+    rootelement = ElementTree().parse(webconfig_path)
+    
+    xpath = "CustomAppSettings/Default/DataLink/add[@key='%s']"
+    
+    confdir_xpath = xpath % "ConfigurationDirectory"
+    confdir = rootelement.find(confdir_xpath)
+    if confdir is None:
+        raise ValueError("Couldn't find element <%s> in %s" % (confdir_xpath, webconfig_path))
+        
+    datalink_xpath = xpath % "DataLinkFile"
+    datalink = rootelement.find(datalink_xpath)
+    if datalink is None:
+        raise ValueError("Couldn't find element <%s> in %s" % (confdir_xpath, webconfig_path))
+        
+    return os.path.join(confdir.attrib["value"], datalink.attrib["value"])
+
+    
+## Console handling. ################################################
+def log_info(msg):
+    log(ConsoleColor.White, msg)
+    
+def log_hilite(msg):
+    log(ConsoleColor.Yellow, msg)
+    
+def log_error(msg):
+    log(ConsoleColor.Red, msg)
+    
+def log(color, msg):
+    Console.ForegroundColor = color
+    Console.WriteLine(msg)
+    Console.ResetColor()
+    
+    
+## "GUI" logic. ######################################################
+def prompt_branch_choice(paths):
+    paths.append("None of the above")
+    display_options("\nPlease choose a branch:", paths)
+    while (True):
+        try:
+            id = int(raw_input("Your Choice: "))
+        except KeyboardInterrupt:
+            raise
+        except ValueError: # not an integer
+            log_error("Hmmm... please enter a number.")
+            continue
+
+        if id <= 0 or id > len(paths):
+            log_error("Hmmm... invalid choice, please choose again.")
+        else:
+            break
+    return id
+
+    
+def prompt_app_pool_choice(site_name, app_pools):
+    display_options(
+        "\nPlease choose an App Pool for the website <%s>:" % site_name,
+        ["%s (%s Mode, Runtime %s)" % (a.name, a.pipeline_mode, a.runtime_version) 
+            for a in app_pools])
+    while (True):
+        try:
+            id = int(raw_input("Your choice: "))
+        except KeyboardInterrupt:
+            raise
+        except ValueError: # not an integer
+            log_error("Hmmm... please enter a number.")
+            continue
+
+        if id <= 0 or id > len(app_pools):
+            log_error("Hmmm... invalid choice, please choose again.")
+        else:
+            break
+    return app_pools[id-1]
+            
+    
+def display_options(title, options):
+    i = 1
+    Console.WriteLine(title)
+    for option in options:
+        Console.WriteLine("{0}: {1}", i, option)
+        i = i + 1
+
+
+def get_path_from_tfs(src_root, hint):
+    log_info("\nSearching TFS.")
+    found_paths = search_tfs_server(src_root, hint)
+    
+    if len(found_paths) == 0:
+        log_hilite("Found nothing on TFS... sorry.")
+        return None
+    else:
+        id = prompt_branch_choice(found_paths)
+        if id == len(found_paths):
+            return None
+        else:
+            return found_paths[id-1]
+
+
+## Main. #############################################################    
+def main():
+    Console.SetOut(Console.Error)
+    _stdout = sys.stdout
+    sys.stdout = sys.stderr
+    
+    p = argparse.ArgumentParser(
+        description=DESCRIPTION, 
+        formatter_class=RawTextHelpFormatter)
+    p.add_argument('hint', type=str, nargs=1, help='a branch hint')
+    
+    args = p.parse_args()    
+    hint = args.hint[0]
+    
+    try:
+        # Find the src root folder.
+        config_vars = get_config(False)
+        src_root = config_vars['src_root']
+        if not os.path.exists(src_root):
+            raise IOError("Configuration file <%s> is not found.  Program abort."
+                % src_root)
+
+        # Walk the src root folder to get paths related to hint.
+        log_info("\nSearching your local folder.")                
+        found_paths = search_local_drive(src_root, hint)
+                
+        if len(found_paths) == 0:
+            log_info("\nHmmm... no match.")
+            branch_path = get_path_from_tfs(src_root, hint)
+            if branch_path is None:
+                log_hilite("Sorry I couldn't figure out what you want... exit now.")
+                return 1
+        else:
+            id = prompt_branch_choice(found_paths)
+            if id == len(found_paths): # ie, None of the above
+                branch_path = get_path_from_tfs(src_root, hint)
+                if branch_path is None:
+                    log_hilite("Sorry I couldn't figure out what you want... exit now.")
+                    return 1                   
+            else:
+                branch_path = found_paths[id-1]
+        
+        site_name = generate_website_name(branch_path, src_root)   
+        wcf_filesys_path = find_path_that_exists(branch_path, POSSIBLE_WCF_FILESYS_PATHS)
+    
+        # Handle websites.
+        if not does_website_exist(site_name):
+            log_info("Couldn't find website <%s>.  I am creating one now." 
+                % site_name)
+            app_pools = get_existing_app_pools()
+            
+            app_pool1 = prompt_app_pool_choice(site_name, app_pools)
+            app_pool2 = prompt_app_pool_choice(site_name + WCF_VDIR_PATH + "/WCFServices", app_pools)
+            
+            create_website(
+                site_name, PORT, SITE_ROOT,
+                WCF_VDIR_PATH, wcf_filesys_path, 
+                app_pool1, app_pool2)
+
+        log_info("\nStopping current running site.")
+        stop_current_running_website()
+        log_info("Switching to website <%s>." % site_name)
+        start_website(site_name)
+        
+        # Set ClientBin folder and its contents to writeable (they are readonly by
+        # default since they are checked into source control.
+        try:
+            set_files_to_writable(os.path.join(branch_path, 
+                "Web\FSSPortalSolution.root\FSSPortalSolution\FSSPortal\ClientBin"))
+        except Exception, e:
+            log_error("\nHmm... Couldn't set files to writable due to %s" % e)
+        
+        # Map the drives.
+        log_info("\nMapping drives.")
+        unmap_drive("R")
+        unmap_drive("V")
+        try:
+            corelib_path_root = get_corelib_path_from_target_file(branch_path)
+            if os.path.exists(os.path.join(corelib_path_root, "Build")):
+                # New style: use TFBuild
+                r_path = os.path.join(corelib_path_root, "Output", "Spectrum")
+                if not os.path.exists(r_path):
+                    os.mkdirs(r_path)
+            else:
+                # Old style: use CollectModule
+                r_path = os.path.join(corelib_path_root, "Source")
+            map_drive("R", r_path, raise_error=True)
+
+        except IOError, e:
+            r_path = "Um... Wat?"
+            log_error("\nHmm... Couldn't map %s drive for you due to %s" % ("R", e))
+            log_error("You have to map it yourself afterwards like this:")
+            log_hilite('net share R-Drive="YOUR_PATH" /grant:everyone,FULL')
+            log_hilite('net use R: \\\\localhost\\R-Drive /persistent:yes')
+
+        try:           
+            v_path = find_path_that_exists(branch_path, POSSIBLE_WEBLIB_FILESYS_PATHS)
+            map_drive("V", v_path, raise_error=True)
+
+        except IOError, e:
+            v_path = "I donno."
+            log_error("\nHmm... Couldn't map %s drive for you due to %s" % ("V", e))
+            log_error("You have to map it yourself afterwards like this:")
+            log_hilite('net share V-Drive="YOUR_PATH" /grant:everyone,FULL')
+            log_hilite('net use V: \\\\localhost\\V-Drive /persistent:yes')
+            
+        # Display database info.
+        try:
+            datalink_path = get_datalink_path(wcf_filesys_path)
+            if os.path.exists(datalink_path):
+                dbinfo = DBInfo(datalink_path)
+                #log_hilite("current db info is this ....")
+                #log_hilite("Or do you want to change to something else?")
+            else:
+                class ugly: pass
+                dbinfo = ugly()
+                dbinfo.database = "Yep."
+                dbinfo.datasource = "Huh?"
+                #log_hilite("File does not exists ... create?")
+            #get_answer (yes or no)
+            #if yes: display_choices from %userprofile%/fss
+            #accept choice
+            #
+            
+        except IOError, e:
+            class ugly: pass
+            dbinfo = ugly()
+            dbinfo.database = "Yep."
+            dbinfo.datasource = "Huh?"
+            log_error("\nHmm... Couldn't figure out your db info due to %s" % (e))
+
+        log_info("\nDone! Now dropping you to the branch directory.")
+        
+        log_hilite("\n====================================================")
+        log_hilite("Site:\t\t%s" % site_name)
+        log_hilite("R:\t\t%s" % r_path)
+        log_hilite("V:\t\t%s" % v_path)
+        log_hilite("DataSource:\t%s" % dbinfo.datasource)
+        log_hilite("Database:\t%s\n" % dbinfo.database)
+        #log_info("\nDatabase config file: %s" % dbinfo.path)        
+        
+        print >> _stdout, branch_path
+        return 0
+        
+    except KeyboardInterrupt:
+        log_hilite("\nCtrl-C pressed.  Program aborted.")
+        return 1
+        
+    except Exception:
+        Console.ForegroundColor = ConsoleColor.Red
+        traceback.print_exc()
+        Console.ResetColor()
+        return 1
+    finally:
+        Console.SetOut(Console.Out)
+        sys.stdout = _stdout
+    
+if __name__ == "__main__":
+    sys.exit(main())

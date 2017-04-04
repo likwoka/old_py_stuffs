@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %} Maps {% endblock %}
+{% block pagename %}maps{% endblock %}
+
+{% block content %}
+<div>
+<h2 class="section-title">The Venues</h2>
+<p>For the morning ceremony:</p> 
+<center>
+<h3>St. Christopher On-The-Heights Anglican Church</h3>
+<p>171 Delhi Avenue, North York, Ontario
+<a href="http://maps.google.ca/maps?f=q&hl=en&q=171+Delhi+Avenue,+North+York,+Ontario&ie=UTF8&ll=43.743941,-79.429436&spn=0.024617,0.086517&om=1">(Map)</a>
+</p>
+</center>
+<br />
+<p>For the dinner reception:</p>
+<center>
+<h3><a href="http://www.internationalplaza.com">Doubletree International Plaza Hotel, Plaza Ballroom AB</a></h3>
+<p>655 Dixon Road, Toronto, Ontario 
+<a href="http://maps.google.ca/maps?f=q&hl=en&q=655+Dixon+Road,+Toronto,+Ontario&ie=UTF8&ll=43.693508,-79.578009&spn=0.024638,0.086517&om=1">(Map)</a>
+</p>
+</center>
+<br />
+<p>Certain Hwy 401 exits may be closed due to summer road construction.  We will provide driving directions on here soon.  Watch this space :)</p>
+</div>
+<!-- Map data incorrect!!! -->
+<!--<div id="map" style="width: 700px; height: 450px"></div> -->
+<!--
+<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=abqiaaaanfmd9-kiu20uazdwkrtv9xqxq7bwtc04ff1kkaiserbhwe7b5xtdgepvtvluq_qhc7lywuhwys6joa"
+  type="text/javascript"></script>
+<script type="text/javascript">
+    //<![cdata[                                                                                
+    function load() {
+      if (gbrowseriscompatible()) {
+        var map = new gmap2(document.getelementbyid("map"));
+        map.setcenter(new glatlng(43.693508,-79.578009), 13);
+        
+        map.addcontrol(new glargemapcontrol());
+        map.addcontrol(new gscalecontrol());
+        map.addcontrol(new gmaptypecontrol());
+        map.addcontrol(new goverviewmapcontrol());
+        
+        var church_point = new glatlng(43.743073,-79.429436);
+        var church_marker = new gmarker(church_point);
+        gevent.addlistener(church_marker, "click", function() {
+            church_marker.openinfowindowhtml("<p>ceremony at st. christopher anglican church<br />saturday, september 23, 2006<br />11:00am");
+            });
+        map.addoverlay(church_marker);
+        
+        var hotel_point = new glatlng(43.693508,-79.578009);
+        var hotel_marker = new gmarker(hotel_point);
+        gevent.addlistener(hotel_marker, "click", function() {
+            hotel_marker.openinfowindowhtml("<p>reception at doubletree international plaza hotel<br />saturday, september 23, 2006<br />6:00pm");
+            });
+        map.addoverlay(hotel_marker);
+      }
+    }
+    //]]>
+</script>
+--> 
+{% endblock %}
+
+

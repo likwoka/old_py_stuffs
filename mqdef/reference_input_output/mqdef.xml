@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<def namespace="RBFG.Insurance.YJT0.DataParsing">
+	<!-- count is either one or many; many becomes a list -->
+	<trans>
+		<tran name="WQ222Request">
+			<seg name="WQ222Header" count="one"/>
+			<seg name="ActivationStatusRequest" count="many"/>
+			<seg name="MessageEndSegment" count="one"/>
+		</tran>
+		<tran name="WQ222Response">
+			<seg name="WQ222Header" count="one"/>
+			<seg name="ActivationStatusResponse" count="many"/>
+			<seg name="MessageEndSegment" count="one"/>
+		</tran>
+	</trans>
+	<!-- type: a for alpha, i for integer, dt for datetime, d72 for decimal in 7.2 format -->
+	<!-- use the format attribute for dt only -->
+	<segments>
+		<segment name="WQ222Header">
+            <field name="Request Code" type="a" length="3">222</field>
+			<field name="Web UID" type="a" length="32"/>
+			<field name="Date" type="dt" format="yyyyMMdd" length="8"/>
+			<field name="Time" type="dt" format="hhmmss" length="6"/>
+			<field name="Return Code" type="a" length="3"/>
+		</segment>
+		<segment name="ActivationStatusRequest">
+			<field name="Label" type="a" length="6">@@ASRQ</field>
+			<field name="Activation Code" type="a" length="10"/>
+			<field name="End Segment" type="a" length="1">|</field>
+		</segment>
+		<segment name="MessageEndSegment">
+			<field name="Label" type="a" length="6">@@ENDM</field>
+			<field name="End Segment" type="a" length="1">|</field>
+		</segment>
+		<segment name="ActivationStatusResponse">
+			<field name="Label" type="a" length="6">@@ASRP</field>
+			<field name="Activation Code" type="a" length="10"/>
+			<field name="Return Code" type="a" length="3"/>
+			<field name="Activation Status" type="a" length="1"/>
+			<field name="Policy Number" type="a" length="11"/>
+			<field name="Expiry Date" type="dt" format="yyyyMMdd" length="8"/>
+			<field name="Transaction Number" type="i" length="5"/>
+			<field name="Effective Date" type="dt" format="yyyyMMdd" length="8"/>
+			<field name="Effective Time" type="dt" format="hhmmss" length="6"/>
+			<field name="Transaction Effective Date" type="dt" format="yyyyMMdd" length="8"/>
+			<field name="Transaction Expiry Date" type="dt" format="yyyyMMdd" length="8"/>
+			<field name="Line of Business" type="a" length="1"/>
+			<field name="Annual Discounted Premium" type="d72" length="9"/>
+			<field name="Policy Status" type="a" length="1"/>
+			<field name="Policy Holder 1 Last Name" type="a" length="30"/>
+			<field name="Policy Holder 1 First Name" type="a" length="30"/>
+			<field name="Policy Holder 2 Last Name" type="a" length="30"/>
+			<field name="Policy Holder 2 First Name" type="a" length="30"/>
+			<field name="Date of Birth" type="dt" format="yyyyMMdd" length="8"/>
+			<field name="Plan Code" type="a" length="8"/>
+			<field name="Policy Term" type="a" length="3"/>
+			<field name="Transaction Premium Sign" type="a" length="1"/>
+			<field name="Transaction Premium" type="d72" length="9"/>
+			<field name="Written Premium" type="d72" length="9"/>
+			<field name="TH Quote Policy Number" type="a" length="8"/>
+			<field name="End Segment" type="a" length="1">|</field>
+		</segment>
+	</segments>
+</def>

@@ -1,0 +1,14 @@
+!!! A FEATURE A DAY !!!
+
+For 0.5 (2006 08 14)
+DONE add hotel website link
+MON add special hotel rate for out-of-town guest
+DONE change form int fields to dropdown lists
+DONE add 404.html and 500.html others
+DONE send email to admin when receive an error (default feature)
+DONE merge settings.py into dev_settings.py prod_settings.py..etc
+DONE output csv, add it through the admin homepage
+MON put in more pictures
+- user poll?  Who is a better poker player?  Would Alex cook?  Comments
+RSS for NEWS, yahoo widget, google widget
+

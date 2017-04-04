@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Alex & Daphne ... {% block title %}{% endblock %}</title>
+        <meta http-equiv="Content-Language" content="en-us" />
+        <meta name="robots" content="all" />
+        <meta name="keywords" content="Alex Li and Daphne Wedding September 23 2006" />
+        <meta name="description" content="Alex and Daphne gets married September 23, 2006 in Toronto, Canada." />
+        <link rel="stylesheet" type="text/css" media="print" href="/media/print.css" />
+        <link rel="stylesheet" type="text/css" media="screen" href="/media/screen.css" />
+        {% block extrahead %}{% endblock %}
+    </head>
+    <body class="{% block pagename %}pagename{% endblock %}" 
+        onload="{% block body_load %}{% endblock %}" 
+        onunload="{% block body_unload %}{% endblock %}">
+        <div id="header">
+            <h1>Alex &amp; Daphne<br /><span id="header-description">2006.09.23</span></h1>
+            {% include "menu.html" %}
+        </div>
+        <div id="content">
+            {% block content %}
+            <p>This is a sample content block.  It could be a bunch of photos, a 2-column homepage, or a bunch of Google Maps.</p>
+            {% endblock %}
+        </div>
+        <div id="footer">
+            <p>&copy; 2006 Alex Li</p>
+        </div>
+        <!-- STATS: Total: %(totTime).2f Python: %(pyTime).2f DB: %(dbTime).2f Queries: %(queries)d -->    
+    </body>
+</html>

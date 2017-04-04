@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="415"
+   name=""
+   committed-date="2005-04-16T22:14:29.657797Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/bookie/tests"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="415"/>
+<entry
+   committed-rev="415"
+   name="test_user.py"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="6be16eb16162c087e5202c596c4378d5"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="__init__.py"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="552dacb15f2019c8f3f74c55befa242c"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="test_bookmark.py"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="db4de202e91ba4f6569f49038d674010"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+</wc-entries>

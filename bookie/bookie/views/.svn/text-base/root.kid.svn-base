@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<?python
+import time
+current_time = time.strftime("%C %c")
+?>
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://purl.org/kid/ns#">
+    <head>
+        <title>Root</title>
+    </head>
+    <body>
+        <p>Hello World, this is bookie. Current time is 
+            <b py:content="current_time">HH:MM</b></p>
+    </body>
+</html>

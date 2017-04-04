@@ -1,0 +1,454 @@
+"""
+    %prog [Action] path_to_solution.sln [Options]
+
+Description:
+    Batch add or remove all web projects listed in a VS.NET solution file
+    to IIS. Because all web projects are referenced by URL (http://) rather
+    than physical file path in the solution file, you might need to specify
+    a search path(s), to denote where the web projects might be found
+    physically.  If no search path is specified when "add" or "overwrite",
+    the parent directory of the solution file will be used as the search
+    path.
+
+    Currently supports:
+    Visual Studio.NET 2003
+    Visual Studio 2005 (with old-style web application projects and WCF 3.0)
+    Visual Studio 2008 (experimental)
+
+
+Example:
+    %prog overwrite /path/to/solution.sln
+    %prog overwrite /path/to/solution.sln -w default
+    %prog overwrite /path/to/solution.sln -s /1st/path;/2nd/path
+
+    %prog add /path/to/solution.sln
+    %prog add /path/to/solution.sln -w default
+    %prog add /path/to/solution.sln -s /1st/path;/2nd/path
+       
+    %prog remove /path/to/some_solution.sln
+    %prog remove /path/to/some_solution.sln -c default
+
+Actions:
+    add         Add all virtual directories as listed in the .sln
+                solution file to IIS, except those that already
+                exist in IIS.
+    overwrite   Add all virtual directories as listed in the .sln
+                solution file to IIS.  If a virtual directory
+                already exists in IIS, remove it from IIS, then
+                add it using the path from the .sln solution file.
+    remove      Remove all virtual directories as listed in the
+                .sln solution file from IIS.
+
+Requirement:
+    IIS 5.1 (Windows XP), IIS 6.0
+    IronPython 2.0+
+"""
+
+
+# This script uses Python for scripting and compatibility,
+# uses IronPython for calling into .NET APIs.
+
+USAGE = __doc__
+VERSION = '0.9.2'
+
+NET20_PATH = "C:/WINNT/Microsoft.NET/Framework/v2.0.50727/"
+WEBSITE_ID = None # The Default Website value in IIS LDAP scheme
+
+# Uncomment and set this if you are using a version of IronPython below 2.0;
+# IronPython 2.0 already includes all the required python libraries.
+#
+#STD_LIB_PATH = 'C:/Python25/Lib'
+#import sys; sys.path.append(STD_LIB_PATH);
+
+# Python libraries. Note that ElementTree doesn't work with IronPython 1.0.1,
+# so we are using .NET Xml library instead.
+try:
+    import sys, os, optparse, traceback
+except ImportError:
+    if "STD_LIB_PATH" not in locals():
+        print >> sys.stderr, "Import error! Seems like you are not using IronPython 2 yet; " \
+                  "In this case, uncomment the STD_LIB_PATH section in the script and try again!"
+    else:
+        print >> sys.stderr, "Import error! May be your python library is not located at %s? " \
+                  "Change the variable STD_LIB_PATH in the script!" % STD_LIB_PATH
+    sys.exit(1)
+
+
+# .NET libraries.
+import clr
+clr.AddReference("System.DirectoryServices")
+from System.DirectoryServices import DirectoryEntry
+
+clr.AddReference("System.Xml")
+from System.Xml import XmlDocument, XmlNamespaceManager
+
+from System.Diagnostics import Process
+from System import Array, String
+
+
+def get_website_id(server_comment):
+    iisweb = DirectoryEntry("IIS://localhost/W3SVC")
+    for c in iisweb.Children:
+        if c.SchemaClassName == "IIsWebServer":
+            if server_comment == None:
+                return c.Name
+            else:
+                if c.Properties["ServerComment"].Value == server_comment:
+                    return c.Name
+    if server_comment:
+        print "Warning: cannot find any entry with website name <%s>, assume ID is 1." % server_comment
+    else:
+        print "Warning: cannot find any entry with schema <IIsWebServer>, assume ID is 1."
+    return "1"
+    
+
+class VirtualDirBase:
+    """Contains method for creating/deleting virtual directories.
+    """
+    def __init__(self, name, url, root):
+        """
+        name -- a string of the name of the virtual directory.  Typically
+                the web project name.  Ex: RBCCacheWS
+        url  -- a string of the URL.  Ex: http://localhost/RBCCacheWS
+        root -- A DirectoryEntry instance pointing to the root of IIS.
+        """
+        self.name = name
+        self.url = url
+        self.root = root
+
+    def exists(self):
+        for c in self.root.Children:
+            if c.Name == self.name:
+                return True
+        return False
+
+    def delete(self):
+        if self.exists():
+            self.root.Invoke( "Delete", Array[String](['IISWebVirtualDir', self.name]) )
+            print "Web application <%s> deleted from IIS!" % self.name
+
+    def create(self, search_roots):
+        physical_path = None
+        for r in search_roots:
+            possible_path = os.path.join(r, self.name)
+            if os.path.exists(possible_path):
+                physical_path = os.path.abspath(possible_path)
+                break
+        else:
+            print "Web application <%s> is not found in any of the search roots!" % self.name
+            return
+
+        try:
+            obj = self.root.Children.Add(self.name, 'IISWebVirtualDir')
+            obj.Properties["Path"][0]              = physical_path
+            obj.Properties["AccessScript"][0]      = True
+            obj.Properties["AccessRead"][0]        = True
+            obj.Properties["AccessExecute"][0]     = False
+            obj.Properties["AccessWrite"][0]       = False
+            obj.Properties["EnableDefaultDoc"][0]  = True
+            obj.Properties["EnableDirBrowsing"][0] = False
+            obj.Properties["DefaultDoc"][0]        = "default.htm"
+            obj.CommitChanges()
+
+            # 0 means LOW, 1 means OUT-OF-PROCESS, 2 means MEDIUM (POOLED)
+            obj.Invoke("AppCreate2", 2)
+
+            # The AppFriendlyName corresponds to "Virtual Directory tab > Application
+            # Name". It cannot be set until Invoke("AppCreate2") is called (A bug?).
+            obj.Properties["AppFriendlyName"][0]   = self.name
+            obj.CommitChanges()
+
+            print "Web application <%s> created." % self.name
+        except:
+            print "Cannot create web application <%s>!  Please manually create it." % self.name
+
+class NET11VirtualDir(VirtualDirBase):
+    """Virtual Directory for Hosting .NET 1.1 Web application.
+    """
+    def create(self, search_roots):
+        VirtualDirBase.create(self, search_roots)
+        # Get the physical path, if it exists, create
+        # the webinfo file.  If it doesn't, just ignore
+        # it because the Virtual Directory can't be
+        # and hasn't been created anyway.
+        for r in search_roots:
+            possible_path = os.path.join(r, self.name)
+            if os.path.exists(possible_path):
+                physical_path = os.path.abspath(possible_path)
+                self.create_webinfo_file(physical_path)
+
+    # Template for .webinfo file.
+    CONTENT = """<VisualStudioUNCWeb>
+    <Web URLPath = "%s" />
+</VisualStudioUNCWeb>"""
+
+    def create_webinfo_file(self, dir_path):
+        """Create a .webinfo file.  This file is needed for
+        VS.NET 2003 to open a web application.
+
+        dir_path -- a string of path to the web project.
+        """
+        webinfo_path = os.path.join(dir_path, self.name + ".csproj.webinfo")
+        if os.path.exists(webinfo_path):
+            return
+        else:
+            try:
+                f = open(webinfo_path, "w")
+                f.write(self.CONTENT % self.url)
+                f.close()
+            except:
+                print "Creating webinfo file <%s> failed!" % webinfo_path
+            print "Webinfo file <%s> created!" % webinfo_path
+
+
+class NET20VirtualDir(VirtualDirBase):
+    """Virtual Directory for Hosting .NET 2.0 Web application.
+    """
+    def create(self, search_roots):
+        VirtualDirBase.create(self, search_roots)
+        self.do_regiis()
+
+    def do_regiis(self):
+        """Do aspnet_regiis for this virtual directory.
+        By IIS default, ASP.NET is set to .NET 1.1.  We are
+        doing this since this virtual directory is to be run
+        on .NET 2.0.
+        """
+        p = Process()
+        p.StartInfo.UseShellExecute = False
+        p.StartInfo.CreateNoWindow = True
+        p.StartInfo.RedirectStandardError = True
+        p.StartInfo.FileName = os.path.join(NET20_PATH,  "aspnet_regiis.exe")
+        p.StartInfo.Arguments = "-s W3SVC/%s/ROOT/%s -norestart" % (WEBSITE_ID, self.name)
+        p.Start()
+        p.WaitForExit()
+        p.Close()
+
+
+
+class Action:
+    """Represents action that can be perform on a
+    virtual directory.  Subclass from this for each
+    action.
+    """
+    # Will be set to the parent directory of the sln file
+    # during instantiation.
+    search_roots = []
+
+    def run(self, vdir):
+        raise NotImplementedError()
+
+class AddOnly(Action):
+    def run(self, vdir):
+        if vdir.exists():
+            print "Web application <%s> already exists under IIS!  We will skip it." % vdir.name
+        else:
+            vdir.create(self.search_roots)
+
+class Overwrite(Action):
+    def run(self, vdir):
+        vdir.delete()
+        vdir.create(self.search_roots)
+
+class Delete(Action):
+    def run(self, vdir):
+        vdir.delete()
+
+# Available actions to be performed on a virtual directory.
+ACTIONS = {
+    'add'       : AddOnly,
+    'overwrite' : Overwrite,
+    'remove'    : Delete,
+}
+
+def create_action_obj(action_name):
+    global ACTIONS
+    return ACTIONS[action_name]()
+
+
+
+class SolutionFileParserBase:
+    """Base class for parsing solution file
+    and creating Virtual Directories with projects
+    within the solution.
+
+    Subclass from this class for each version of
+    Visual Studio Solution files.
+    """
+    def __init__(self, path):
+        self.path = path
+        self.root = DirectoryEntry("IIS://localhost/W3SVC/%s/Root" % WEBSITE_ID)
+
+    def parse_file(self, action):
+        for line in open(self.path, 'r'):
+            yes, name, url = self.is_web_project(line)
+            if yes:
+                vdir = self.VirtualDir(name, url, self.root)
+                action.run(vdir)
+
+    def is_web_project(self, line):
+        """Parse the line, and returns a tuple of
+        (True, name, url) if a web project is found, or
+        (False, None, None) otherwise.
+        """
+        raise NotImplementedError()
+
+
+class VS2003SolutionFileParser(SolutionFileParserBase):
+    """Parse Visual Studio.NET 2003 Solution File.
+    """
+    VirtualDir = NET11VirtualDir
+
+    def is_web_project(self, line):
+        # Sample input:
+        # Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderStatus", "http://localhost/OrderStatus/OrderStatus.csproj", "{B180DCF2-28EC-4783-B233-A7AC5F332CD6}"
+        if not line.startswith('Project("'):
+            return (False, None, None)
+        segments = line.split(',')
+
+        if segments[1].startswith(' "http://localhost/'):
+            name = segments[0][segments[0].find('=')+1:].strip(' "')
+            url  = segments[1].strip(' "')
+            return (True, name, url)
+        else:
+            return (False, None, None)
+
+
+class VS2005SolutionFileParser(SolutionFileParserBase):
+    """Parse Visual Studio 2005 Solution File.
+    """
+    VirtualDir = NET20VirtualDir
+
+    def parse_file(self, action):
+        # We stop IIS first so that the aspnet_regiis can
+        # run somewhat faster for each virtual directory.
+        iis_web = DirectoryEntry("IIS://localhost/W3SVC/%s" % WEBSITE_ID)
+        iis_web.Invoke("Stop", None)
+        SolutionFileParserBase.parse_file(self, action)
+        iis_web.Invoke("Start", None)
+
+    def is_web_project(self, line):
+        # Sample input:
+        # Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RBCBankwireWS", "RBCBankwireWS\RBCBankwireWS.csproj", "{F3493078-41F8-4FAF-8AE9-DDB6A62E6B77}"
+        # Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "http://localhost/RBCFundsTranferServiceWCF/", "http://localhost/RBCFundsTranferServiceWCF", "{1CDF49A8-E593-4989-B514-D1240E15EB36}"
+        if not line.startswith('Project("'):
+            return (False, None, None)
+        segments = line.split(',')
+        proj_path = segments[1].strip(' "')
+
+        if proj_path.endswith(".csproj"):
+            # Ends with .csproj, let's look into it.
+            file_path = os.path.join(os.path.dirname(self.path), proj_path)
+            try:
+                # Parse the .csproj file to see if it is a Web project
+                # and if so what the URL is.
+                xmldoc = XmlDocument()
+                xmldoc.Load(file_path)
+
+                nsmgr = XmlNamespaceManager(xmldoc.NameTable)
+                nsmgr.AddNamespace("b", "http://schemas.microsoft.com/developer/msbuild/2003")
+                iis_node = xmldoc.SelectSingleNode(
+                        "/b:Project/b:ProjectExtensions/" +
+                        "b:VisualStudio/b:FlavorProperties/" +
+                        "b:WebProjectProperties/b:IISUrl",
+                        nsmgr
+                )
+
+                if iis_node is not None:
+                    name = segments[0][segments[0].find('=')+1:].strip(' "')
+                    url  = iis_node.InnerText
+                    return (True, name, url)
+                else:
+                    return (False, None, None)
+
+            except Exception:
+                print >> sys.stderr, "Error parsing %s, see traceback below:" % proj_path
+                # traceback is a C extension not working in IronPython 1.0.1.  Should work in IronPython 2.6
+                #traceback.print_exc()
+                return (False, None, None)
+
+        elif proj_path.startswith("http://localhost/"):
+            # WCF 3.0 websites are stored in the solution file.
+            name = proj_path.replace("http://localhost/", "")
+            url  = proj_path
+            return (True, name, url)
+        else:
+            # Not ending with .csproj means it is just a folder, skip it
+            # (New feature since VS 2005)
+            return (False, None, None)
+
+
+class VS2008SolutionFileParser(VS2005SolutionFileParser):
+    """Parse Visual Studio 2008 Solution File.
+    """
+    pass
+
+def ParserFactory(path):
+    """Return a SolutionFileParser instance depending
+    on the verson of the solution file.
+
+    path -- a string of path to the solution file.
+    """
+    f = open(path, 'r')
+    line = f.readline().rstrip()
+    f.close()
+
+    if line.endswith("8.00"):
+        return VS2003SolutionFileParser(path)
+    elif line.endswith("9.00"):
+        return VS2005SolutionFileParser(path)
+    elif line.endswith("10.00"):
+        return VS2008SolutionFileParser(path)
+    else:
+        print >> sys.stderr, "This version of Visual Studio is not supported!"
+        sys.exit(1)
+
+
+def main():
+#    try:
+        parser = optparse.OptionParser(USAGE)
+        parser.add_option("-w", "--website-name",
+                action="store", dest="server_comment", default=None,
+                help="The website name (server comment). Default is the first website found under metabase.")
+        parser.add_option("-s", "--search-paths",
+                action="store", dest="search_paths", default=None,
+                help="The search paths separated by semi-colon. Default is the current working directory.")
+        opts, args = parser.parse_args()
+
+        num_of_args = len(args)
+
+        if num_of_args != 2:
+            print >> sys.stderr, "Invalid number of input arguments!"
+            return 1
+
+        action = args[0]
+        if action not in ACTIONS.keys():
+            print >> sys.stderr, "<%s> action is not valid!" % action
+            return 1
+
+        sln_path = os.path.abspath(args[1])
+        if not os.path.isfile(sln_path):
+            print >> sys.stderr, "%s is not a file!" % sln_path
+            return 1
+
+        action_obj = create_action_obj(action)
+        action_obj.search_roots.append(os.path.dirname(sln_path))
+        
+        global WEBSITE_ID
+        WEBSITE_ID = get_website_id(opts.server_comment)
+            
+        if opts.search_paths:
+            action_obj.search_roots.extend(opts.search_paths.split(';'))
+
+        sln_parser = ParserFactory(sln_path)
+        sln_parser.parse_file(action_obj)
+
+        return 0
+#    except Exception:
+#        traceback.print_exc() # Commented out because of compatability; Should work in IronPython 2.6
+#        return 1
+
+
+
+if __name__ == "__main__":
+    sys.exit(main())

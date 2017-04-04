@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %} Home {% endblock %}
+
+{% block pagename %}home{% endblock %} 
+
+{% block content %}
+<div id="content-left">
+    <h2 class="section-title">Welcome</h2>
+    <p>Welcome everyone to our wedding web site! For those of you who will not be able to make it to our wedding, we thought this would be a great way for us to share all of our experiences with you. For all of you who will be attending, all of the information you could ever want to know about us and our wedding will be available for you here.</p>
+
+    <h2 class="section-title">News &amp; Events</h2>
+    <dl>
+        <dt>The Ceremony</dt>
+        <dd><p>11:00am September 23, 2006. St Christopher On-The-Heights Anglican Church</p></dd>
+        <!--<dd><a href="/events/ceremony">Details...</a></dd>-->
+    </dl>
+    <dl>
+        <dt>The Reception</dt>
+        <dd><p>6:00pm September 23, 2006.  Doubletree International Plaza Hotel</p></dd>
+        <!--<dd><a href="/events/reception">Details...</a></dd>-->
+    </dl>
+</div>
+
+<div id="content-right">
+    <h2 class="section-title">RSVP</h2>
+    {% if errors %}<p class="error-message">{{ errors.message }}</p>{% endif %} 
+    <form class="form" id="rsvp-form" method="post" action="/rsvp/add/">
+        <input type="hidden" value="{{ form.name_count }}" id="name-count" name="name_count" />
+        <dl> 
+            <dt><label for="id_name0">Name:</label></dt>
+            <dd><input class="strong-input" name="name0" type="text" id="id_name0" value="{{ form.name0 }}" />
+            <a id="addname" href="javascript:;" onclick="addName();">Add another name</a>
+            {% if errors.name0 %} <div class="error-field">{{ errors.name0 }}</div> {% endif %}
+            <div id="additional-names">
+            {% for name in additional_names %}
+                <div id="{{ name.key }}"><br /><input class="strong-input" 
+                name="{{ name.key }}" id="id_{{ name.key }}" type="text" value="{{ name.val }}">
+                    <a class="removename" href="#" onclick="removeName('{{ name.key }}')">remove</a>
+                </div> 
+            {% endfor %} 
+            </div>
+            </dd>
+            
+            <dt>How many of you ...</dt>
+            <dd>
+            <table>
+                <tr>
+                    <td><label for="id_num_ceremony">Church &amp; Lunch:</label></td>
+                    <td>
+                        <select name="num_ceremony" id="id_num_ceremony">
+                        <option value=""></option>
+                        <option value="0" {% ifequal form.num_ceremony "0" %} selected="selected" {% endifequal %}>not coming</option>
+                        <option value="1" {% ifequal form.num_ceremony "1" %} selected="selected" {% endifequal %}>1</option>
+                        <option value="2" {% ifequal form.num_ceremony "2" %} selected="selected" {% endifequal %}>2</option>
+                        <option value="3" {% ifequal form.num_ceremony "3" %} selected="selected" {% endifequal %}>3</option>
+                        <option value="4" {% ifequal form.num_ceremony "4" %} selected="selected" {% endifequal %}>4</option>
+                        <option value="5" {% ifequal form.num_ceremony "5" %} selected="selected" {% endifequal %}>5</option>
+                        <option value="6" {% ifequal form.num_ceremony "6" %} selected="selected" {% endifequal %}>6</option>
+                        </select>
+                        {% if errors.num_ceremony %} <div class="error-field">{{ errors.num_ceremony }}</div> {% endif %}                        
+                    </td>
+                </tr>
+                <tr>
+                    <td><label for="id_num_reception">Dinner Reception:</label></td>
+                    <td>
+                        <select name="num_reception" id="id_num_reception">
+                        <option value=""></option>
+                        <option value="0" {% ifequal form.num_reception "0" %} selected="selected" {% endifequal %}>not coming</option>
+                        <option value="1" {% ifequal form.num_reception "1" %} selected="selected" {% endifequal %}>1</option>
+                        <option value="2" {% ifequal form.num_reception "2" %} selected="selected" {% endifequal %}>2</option>
+                        <option value="3" {% ifequal form.num_reception "3" %} selected="selected" {% endifequal %}>3</option>
+                        <option value="4" {% ifequal form.num_reception "4" %} selected="selected" {% endifequal %}>4</option>
+                        <option value="5" {% ifequal form.num_reception "5" %} selected="selected" {% endifequal %}>5</option>
+                        <option value="6" {% ifequal form.num_reception "6" %} selected="selected" {% endifequal %}>6</option>
+                        </select>                    
+                        {% if errors.num_reception %} <div class="error-field">{{ errors.num_reception }}</div> {% endif %} 
+                    </td>
+                </tr>
+            </table>
+            </dd>
+            
+            <dt><label for="id_comment">Hmm... Any comments?</label></dt>
+            <dd><textarea name="comment" id="id_comment" rows="7" cols="24">{{ form.comment }}</textarea>
+            {% if errors.comment %} <div class="error-field">{{ errors.comment }}</div> {% endif %}
+            </dd>
+            
+            <dt></dt>
+            <dd><input type="submit" id="id_submit" value="Submit" /></dd>
+        </dl>
+    </form>
+</div>
+<script type="text/javascript">
+function addName() {
+    var ni = document.getElementById('additional-names');
+    var numi = document.getElementById('name-count');
+    var num = (numi.value - 1) + 2;
+    numi.value = num;
+    var newdiv = document.createElement('div');
+    var divIdName = 'name' + num;
+    newdiv.setAttribute('id', divIdName);
+    newdiv.innerHTML = '<br /><input class="strong-input" type="text" id="id_name'+num+'" name="name'+num+'" value="" />\n<a class="removename" href="#" onclick="removeName(\''+divIdName+'\')">remove</a>';
+    ni.appendChild(newdiv);
+}
+
+function removeName(divNum) {
+    var d = document.getElementById('additional-names');
+    var olddiv = document.getElementById(divNum);
+    d.removeChild(olddiv);
+}
+</script>
+{% endblock %}

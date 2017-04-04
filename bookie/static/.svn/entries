@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="415"
+   name=""
+   committed-date="2005-04-16T22:14:29.657797Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/bookie/static"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="415"/>
+<entry
+   committed-rev="415"
+   name="print.css"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+<entry
+   committed-rev="415"
+   name="default.css"
+   text-time="2005-04-16T22:15:48.000000Z"
+   committed-date="2005-04-16T22:14:29.657797Z"
+   checksum="d41d8cd98f00b204e9800998ecf8427e"
+   kind="file"
+   prop-time="2005-04-16T22:15:48.000000Z"/>
+</wc-entries>

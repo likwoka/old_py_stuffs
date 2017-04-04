@@ -1,0 +1,92 @@
+import unittest
+import switch
+
+class WebsiteTest(unittest.TestCase):
+
+    def test_does_website_exists_true(self):
+        # This test is not always true...
+        self.assertTrue(switch.does_website_exist("Default Web Site"))
+
+    def test_does_website_exists_false(self):
+        self.assertFalse(switch.does_website_exist("Does 3 Not 3 Exist"))
+
+    def test_stop_current_running_website_ok(self):
+        switch.stop_current_running_website()
+               
+    def test_start_website_ok(self):
+        switch.stop_current_running_website()
+        switch.start_website("Default Web Site")
+
+    def test_start_website_ok_already_started(self):
+        switch.stop_current_running_website()
+        switch.start_website("Default Web Site")
+        # No error raised, silent automatically.
+        switch.start_website("Default Web Site")
+                
+    def test_start_website_fail_not_exists(self):
+        switch.stop_current_running_website()
+        # Expects <AttributeError: 'NoneType' object has no attribute 'Start'>
+        with self.assertRaises(AttributeError):
+            switch.start_website("Does 3 Not 3 Exist")
+        
+    def test_start_website_fail_another_site_is_running(self):
+        switch.stop_current_running_website()
+        switch.start_website("Default Web Site")
+        # Expects <Exception: This Web site cannot be started.  
+        # Another Web site may be using the same port.>
+        with self.assertRaises(Exception):
+            switch.start_website("Main")
+        
+    def _test_create_website_ok(self):
+        switch.create_website("", "", "", "")
+        
+    def test_get_existing_app_pools_ok(self):
+        app_pools = switch.get_existing_app_pools()
+        for a in app_pools:
+            # Name, ManagedPipelineMode, ManagedRuntimeVersion
+            print a.name, a.pipeline_mode, a.runtime_version
+            
+    def test_generate_website_name_ok(self):
+        src_root = 'C:\\Web'
+        tests = [
+            ('C:\\Web\\Release\\4.0\\4.0.4178\\21861(20110610-AFEX)', '4178-AFEX'),
+            ('C:\\Web\\Main', 'Main'),
+            ('C:\\Web\\Main-LoginConsolidation', 'Main-LoginConsolidation'),]
+        for test in tests:
+            self.assertEqual(switch.generate_website_name(test[0], src_root), test[1])
+            
+    
+class DriveMappingTest(unittest.TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        switch.unmap_drive('r', raise_error=False)
+
+    def test_map_and_unmap_smoketest(self):
+        # Don't raise error if drive doesn't exist
+        switch.unmap_drive('r', raise_error=False)
+        
+        switch.map_drive('r', './Test/Spectrum.Net/Main', raise_error=True)
+
+        # Should raise error since the drive is mapped already 
+        # and raise_error=True
+        with self.assertRaises(switch.DriveMappingError):
+            switch.map_drive('r', './test/spectrum.net/main', raise_error=True)
+
+        # Expecting drive mapped error, but not raised 
+        # sicne raise_error=False
+        switch.map_drive('g', './This/Path/Does/Not/Exist', raise_error=False)        
+    
+
+class LoggerTest(unittest.TestCase):
+    def test_info_smoketest(self):
+        switch.log_info('This is an info msg, it should be in grey')
+        
+    def test_warning_smoketest(self):
+        switch.log_warning('This is a warning msg, it should be in yellow')
+
+    def test_error_smoketest(self):
+        switch.log_error('This is an error msg, it should be in red')
+        
+        
+if __name__ == '__main__':
+    unittest.main()

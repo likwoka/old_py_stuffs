@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="390"
+   name=""
+   committed-date="2004-08-02T09:34:19.674916Z"
+   url="svn://192.168.1.11/home/subversion/repos/trunk/sumsales/test/data"
+   kind="dir"
+   uuid="f2c458d5-71c5-0310-96ed-b9a6ecc0bea9"
+   revision="403"/>
+<entry
+   name="Jul_03"
+   kind="dir"/>
+<entry
+   name="Aug_03"
+   kind="dir"/>
+</wc-entries>

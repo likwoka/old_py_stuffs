@@ -1,0 +1,18 @@
+import sys, os
+#import clr
+from System import Console, ConsoleColor
+
+def main():
+    Console.SetOut(Console.Error)
+    _stdout = sys.stdout
+    sys.stdout = sys.stderr
+    try:
+        print "Hello world on stderr"
+        print >> _stdout, "c:\\a"
+        #print >> _stdout, ""
+        return 0
+    finally:
+        Console.SetOut(Console.Out)
+        sys.stdout = _stdout    
+if __name__ == "__main__":
+    sys.exit(main())
