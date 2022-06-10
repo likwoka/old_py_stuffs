@@ -15,7 +15,7 @@ def tailf(path, cr):
 def cprint():
     while 1:
         line = (yield)
-        print line
+        print(line)
 
 if __name__ == "__main__":
     path = sys.argv[1]
